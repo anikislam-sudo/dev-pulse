@@ -425,7 +425,9 @@ var app_default = app;
 // src/server.ts
 dotenv3.config();
 var PORT = process.env.PORT || 5e3;
-app_default.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app_default.listen(PORT, () => {
+    console.log(`Server running on ${PORT}`);
+  });
+}
 //# sourceMappingURL=server.js.map
