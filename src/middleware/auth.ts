@@ -1,12 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import sendResponse from "../utills/sendResponse";
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization;
 
     if (!token) {
-      return res.status(401).json({
+      return sendResponse(res, {
+        statusCode: 401,
         success: false,
         message: "Unauthorized",
       });
@@ -18,7 +20,8 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({
+    return sendResponse(res, {
+      statusCode: 401,
       success: false,
       message: "Invalid token",
     });
