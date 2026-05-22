@@ -1,17 +1,32 @@
 import { pool } from "../../config/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { createError } from "../../utills/createError";
 
+// Helper error function
+
+// ================= SIGNUP =================
 export const signup = async (payload: any) => {
-  const emailQuery = "SELECT * FROM users WHERE email=$1";
-
-  const emailResult = await pool.query(emailQuery, [payload.email]);
-
-  if (emailResult.rows.length > 0) {
-    throw new Error("Email already exists");
+  if (!payload) {
+    throw createError("Request body missing", 400);
   }
 
-  const hashedPassword = await bcrypt.hash(payload.password, 10);
+  const { name, email, password, role } = payload;
+
+  if (!name || !email || !password) {
+    throw createError("Name, email and password are required", 400);
+  }
+
+  // check email exists
+  const emailQuery = "SELECT * FROM users WHERE email=$1";
+  const emailResult = await pool.query(emailQuery, [email]);
+
+  if (emailResult.rows.length > 0) {
+    throw createError("Email already exists", 409);
+  }
+
+  // hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const query = `
     INSERT INTO users(name,email,password,role)
@@ -19,33 +34,38 @@ export const signup = async (payload: any) => {
     RETURNING id,name,email,role,created_at,updated_at
   `;
 
-  const values = [
-    payload.name,
-    payload.email,
-    hashedPassword,
-    payload.role || "contributor",
-  ];
+  const values = [name, email, hashedPassword, role || "contributor"];
 
   const result = await pool.query(query, values);
 
   return result.rows[0];
 };
 
+// ================= LOGIN =================
 export const login = async (payload: any) => {
-  const query = "SELECT * FROM users WHERE email=$1";
+  if (!payload) {
+    throw createError("Request body missing", 400);
+  }
 
-  const result = await pool.query(query, [payload.email]);
+  const { email, password } = payload;
+
+  if (!email || !password) {
+    throw createError("Email and password are required", 400);
+  }
+
+  const query = "SELECT * FROM users WHERE email=$1";
+  const result = await pool.query(query, [email]);
 
   const user = result.rows[0];
 
   if (!user) {
-    throw new Error("User not found");
+    throw createError("User not found", 404);
   }
 
-  const isMatched = await bcrypt.compare(payload.password, user.password);
+  const isMatched = await bcrypt.compare(password, user.password);
 
   if (!isMatched) {
-    throw new Error("Password incorrect");
+    throw createError("Password incorrect", 401);
   }
 
   const token = jwt.sign(
