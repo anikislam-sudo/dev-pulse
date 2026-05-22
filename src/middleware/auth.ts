@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import sendResponse from "../utills/sendResponse";
 
