@@ -1,4 +1,5 @@
 import { pool } from "../../config/db";
+import { createError } from "../../utills/createError";
 
 export const createIssueIntoDB = async (payload: any, reporterId: number) => {
   const query = `
@@ -74,7 +75,7 @@ export const getSingleIssueFromDB = async (id: number) => {
   const issue = result.rows[0];
 
   if (!issue) {
-    throw new Error("Issue not found");
+    throw createError("Issue not found", 404);
   }
 
   const userQuery = "SELECT id,name,role FROM users WHERE id=$1";
@@ -105,15 +106,15 @@ export const updateIssueIntoDB = async (
   const issue = findResult.rows[0];
 
   if (!issue) {
-    throw new Error("Issue not found");
+    throw createError("Issue not found", 404);
   }
 
   if (user.role === "contributor" && issue.reporter_id !== user.id) {
-    throw new Error("You can only edit your own issue");
+    throw createError("You can only edit your own issue", 403);
   }
 
   if (user.role === "contributor" && issue.status !== "open") {
-    throw new Error("Cannot edit non-open issue");
+    throw createError("Cannot edit non-open issue", 403);
   }
 
   const query = `
@@ -147,7 +148,7 @@ export const deleteIssueFromDB = async (id: number) => {
   const findResult = await pool.query(findQuery, [id]);
 
   if (findResult.rows.length === 0) {
-    throw new Error("Issue not found");
+    throw createError("Issue not found", 404);
   }
 
   const query = "DELETE FROM issues WHERE id=$1";
